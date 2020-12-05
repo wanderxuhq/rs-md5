@@ -1,30 +1,37 @@
 fn main() {
-    let input = String::from("Hello World");
+    let input = String::from("啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊");
+    //let input = String::from("Hello World");
     println!("{}", input);
     let mut bytes = Vec::from(input.as_bytes());
     let len = bytes.len();
     if len % 64 != 56 {
         bytes.push(1 << 7);
-        for i in ((len + 1) % 64..56) {
+        for _i in (len + 1) % 64..56 {
             bytes.push(0);
         }
     }
     let size = len * 8;
-    bytes.push((size << 56 >> 56) as u8);
-    bytes.push((size << 48 >> 56) as u8);
-    bytes.push((size << 40 >> 56) as u8);
-    bytes.push((size << 32 >> 56) as u8);
-    bytes.push((size << 24 >> 56) as u8);
-    bytes.push((size << 16 >> 56) as u8);
-    bytes.push((size << 8 >> 56) as u8);
-    bytes.push((size >> 56) as u8);
-
+    println!("{:?}", len);
+    println!("{:?}", size.to_le_bytes());
+    bytes.extend_from_slice(&size.to_le_bytes());
+    bytes.push(0);
+    bytes.push(0);
+    bytes.push(0);
+    bytes.push(0);
     let mut a = 0x67452301 as u32;
     let mut b = 0xEFCDAB89 as u32;
     let mut c = 0x98BADCFE as u32;
     let mut d = 0x10325476 as u32;
-
-    for i in (0..bytes.len() / 64) {
+    let mut A = 0x67452301 as u32;
+    let mut B = 0xEFCDAB89 as u32;
+    let mut C = 0x98BADCFE as u32;
+    let mut D = 0x10325476 as u32;
+    for i in 0..bytes.len() / 64 {
+        a = A;
+        b = B;
+        c = C;
+        d = D;
+        println!("{}", i);
         let bslice = &bytes[i * 64..i * 64 + 64];
         let bs = [
             tou32(&bslice[0..4]),
@@ -111,40 +118,33 @@ fn main() {
         d = ii(d, a, b, c, bs[11], 10, 0xbd3af235);
         c = ii(c, d, a, b, bs[2], 15, 0x2ad7d2bb);
         b = ii(b, c, d, a, bs[9], 21, 0xeb86d391);
+        A = A.wrapping_add(a);
+        B = B.wrapping_add(b);
+        C = C.wrapping_add(c);
+        D = D.wrapping_add(d);
+
     }
 
-    a = a.wrapping_add(0x67452301);
-    b = b.wrapping_add(0xEFCDAB89);
-    c = c.wrapping_add(0x98BADCFE);
-    d = d.wrapping_add(0x10325476);
-    
-    println!("{:X} {:X} {:X} {:X}", reverse_byte(a), reverse_byte(b), reverse_byte(c), reverse_byte(d));
+    println!(
+        "{:X} {:X} {:X} {:X}",
+        reverse_byte(A),
+        reverse_byte(B),
+        reverse_byte(C),
+        reverse_byte(D)
+    );
 }
 
 fn tou32(b: &[u8]) -> u32 {
     ((b[3] as u32) << 24) + ((b[2] as u32) << 16) + ((b[1] as u32) << 8) + (b[0] as u32)
 }
 
-fn reverse_byte(b: u32) -> u32{
-    ((b & 0x000000FF) << 24) | ((b & 0x0000FF00) << 8) | ((b & 0x00FF0000) >> 8) | ((b & 0xFF000000) >> 24)
-}
-/*
-fn F(x: u64, y: u64, z: u64) -> u64 {
-    (x & y) | ((!x) & z)
-}
-
-fn G(x: u64, y: u64, z: u64) -> u64 {
-    (x & z) | (y & (!z))
+fn reverse_byte(b: u32) -> u32 {
+    ((b & 0x000000FF) << 24)
+        | ((b & 0x0000FF00) << 8)
+        | ((b & 0x00FF0000) >> 8)
+        | ((b & 0xFF000000) >> 24)
 }
 
-fn H(x: u64, y: u64, z: u64) -> u64 {
-    x ^ y ^ z
-}
-
-fn I(x: u64, y: u64, z: u64) -> u64 {
-    y ^ (x | (!z))
-}
-*/
 fn ff(a: u32, b: u32, c: u32, d: u32, mj: u32, s: u32, ti: u32) -> u32 {
     ((b & c) | (!b & d))
         .wrapping_add(a)
